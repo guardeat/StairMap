@@ -56,6 +56,25 @@ namespace ByteC
 			return nullptr;
 		}
 
+		const NodePointer find(size_t hashKey) const
+		{
+			NodePointer iterator{ head };
+			while (iterator)
+			{
+				if (iterator->pair.first == hashKey)
+				{
+					return iterator;
+				}
+				iterator = iterator->next;
+			}
+			return nullptr;
+		}
+
+		const bool contains(size_t hashKey) const
+		{
+			return find(hashKey) != nullptr;
+		}
+
 		NodePointer remove(size_t hashKey)
 		{
 			if (head->pair.first == hashKey)
@@ -207,6 +226,12 @@ namespace ByteC
 			return bucketArray[hashValue % tableSize()].find(hashValue)->pair.second;
 		}
 
+		const Value& at(const Key& key) const
+		{
+			size_t hashValue{ hasher(key) };
+			return bucketArray.at(hashValue % tableSize()).find(hashValue)->pair.second;
+		}
+
 		void erase(const Key& key)
 		{
 			size_t hashValue{hasher(key)};
@@ -222,10 +247,16 @@ namespace ByteC
 			return bucketArray[hashValue % tableSize()].find(hashValue);
 		}
 
+		const NodePointer find(const Key& key) const
+		{
+			size_t hashValue{ hasher(key) };
+			return bucketArray[hashValue % tableSize()].find(hashValue);
+		}
+
 		bool contains(const Key& key) const
 		{
 			size_t hashValue{ hasher(key) };
-			return static_cast<bool>(bucketArray[hashValue % tableSize()].find(hashValue));
+			return bucketArray[hashValue % tableSize()].contains(hashValue);
 		}
 
 		Iterator begin()
