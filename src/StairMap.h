@@ -242,6 +242,29 @@ namespace ByteC
 			return bucketArray.at(hashValue % tableSize()).find(key, hashValue)->pair.second;
 		}
 
+		[[nodiscard]] Value& operator[](const Key& key)
+		{
+			size_t hashValue{ hasher(key) };
+			NodePointer out{ bucketArray[hashValue % tableSize()].find(key,hashValue) };
+			if (out)
+			{
+				return out->pair.second;
+			}
+
+			nodeArray.pushBack(Node{ Key{key}, Value{}, hashValue});
+			out = &nodeArray.back();
+			bucketArray[hashValue % bucketArray.size()].pushFront(out);
+
+			checkLoad();
+
+			return out->pair.second;
+		}
+
+		const Value& operator[](const Key& key) const
+		{
+			return at(key);
+		}
+
 		void erase(const Key& key)
 		{
 			size_t hashValue{ hasher(key) };
@@ -260,7 +283,7 @@ namespace ByteC
 		const NodePointer find(const Key& key) const
 		{
 			size_t hashValue{ hasher(key) };
-			return bucketArray[hashValue % tableSize()].find(key, hashValue);
+			return bucketArray.at(hashValue % tableSize()).find(key, hashValue);
 		}
 
 		bool contains(const Key& key) const

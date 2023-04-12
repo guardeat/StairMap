@@ -93,24 +93,8 @@ namespace ByteA
     };
 
     template<>
-    struct Hash<std::string>
+    struct Hash<std::string>: public std::hash<std::string>
     {
-        constexpr uint32_t operator()(const std::string& string) const
-        {
-            return operator()(string.c_str());
-        }
-
-        constexpr uint32_t operator()(const char* string) const
-        {
-            uint32_t hash{};
-
-            for (uint32_t index{}; string[index]; ++index)
-            {
-                hash += (index + 1) * string[index];
-            }
-
-            return hash;
-        }
     };
 }
 
