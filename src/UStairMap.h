@@ -1,5 +1,5 @@
-#ifndef STAIRMAP_H
-#define	STAIRMAP_H
+#ifndef USTAIRMAP_H
+#define	USTAIRMAP_H
 
 #include <memory>
 #include <utility>
@@ -9,33 +9,32 @@
 
 namespace ByteC
 {
-	template<typename Key,typename Value>
-	struct Node
+	template<typename Value>
+	struct UNode
 	{
-		using NextPointer = Node*;
-		using Pair = std::pair<const Key, Value>;
+		using NextPointer = UNode*;
+		using Pair = std::pair<const size_t,Value>;
 
 		Pair pair;
-		NextPointer next{ nullptr };
-		size_t hash;
+		NextPointer next{nullptr};
 
-		Node(Key&& key, Value&& value, size_t hash)
-			:pair{ std::move(key),std::move(value) }, hash{hash}
+		UNode(size_t hash, Value&& value)
+			:pair{ hash,std::move(value) }
 		{
 		}
 	};
 
-	template<typename Key, typename Value>
-	class Chain
+	template<typename Value>
+	class UChain
 	{
 	public:
-		using NodePointer = Node<Key,Value>*;
+		using NodePointer = UNode<Value>*;
 
 	private:
 		NodePointer head{};
 
 	public:
-		Chain() = default;
+		UChain() = default;
 
 		void pushFront(NodePointer node)
 		{
@@ -43,12 +42,12 @@ namespace ByteC
 			head = node;
 		}
 
-		NodePointer find(const Key& key, size_t hashKey)
+		NodePointer find(size_t hashKey)
 		{
 			NodePointer iterator{ head };
 			while (iterator)
 			{
-				if (iterator->hash == hashKey && iterator->pair.first == key)
+				if (iterator->pair.first == hashKey)
 				{
 					return iterator;
 				}
@@ -57,9 +56,9 @@ namespace ByteC
 			return nullptr;
 		}
 
-		NodePointer remove(const Key& key, size_t hashKey)
+		NodePointer remove(size_t hashKey)
 		{
-			if (head->hash == hashKey && head->pair->first == key)
+			if (head->pair.first == hashKey)
 			{
 				NodePointer out{ head };
 				head = head->next;
@@ -69,7 +68,7 @@ namespace ByteC
 			NodePointer iterator{ head };
 			while (iterator->next)
 			{
-				if (iterator->hash == hashKey && iterator->pair->first == key)
+				if (iterator->next->pair.first == hashKey)
 				{
 					NodePointer out{ iterator->next };
 					iterator->next = out->next;
@@ -81,22 +80,23 @@ namespace ByteC
 		}
 	};
 
-	template<typename Key, typename Value>
-	class MapIterator
+	template<typename Type>
+	class UMapIterator
 	{
 	public:
-		using Pair = std::pair<const Key, Value>;
-		using Node = std::conditional_t<isConst<Value>::value, const Node<Key,Value>, Node<Key,Value> >;
-		using Pointer = std::conditional_t<isConst<Value>::value, const Node*, Node* >;
-		using Array = std::conditional_t< isConst<Value>::value, const Node*, Node* >;
-		using StairArray = std::conditional_t< isConst<Value>::value, const Array*, Array*>;
+		using Pair = std::pair<const size_t, Type>;
+		using Node = UNode<Type>;
+		using Value = std::conditional_t<isConst<Type>::value, const Node, Node >;
+		using Pointer = std::conditional_t<isConst<Type>::value, const Node*, Node* >;
+		using Array = std::conditional_t< isConst<Type>::value, const Node*, Node* >;
+		using StairArray = std::conditional_t< isConst<Type>::value, const Array*, Array*>;
 
 	private:
 		StairArray arrays;
 		size_t index;
 
 	public:
-		MapIterator(StairArray arrays, size_t start)
+		UMapIterator(StairArray arrays, size_t start)
 			:arrays{ arrays }, index{ start }
 		{
 		}
@@ -123,15 +123,15 @@ namespace ByteC
 			return index != left.index;
 		}
 
-		MapIterator& operator++()
+		UMapIterator& operator++()
 		{
 			++index;
 			return *this;
 		}
 
-		MapIterator operator++(int)
+		UMapIterator operator++(int)
 		{
-			MapIterator<Key,Value> old{ *this };
+			UMapIterator<Type> old{ *this };
 			++index;
 			return old;
 		}
@@ -141,72 +141,62 @@ namespace ByteC
 		typename Key,
 		typename Value,
 		typename Hash = ByteA::Hash<Key>,
-		typename Allocator = std::allocator<Node<Key,Value>>>
-	class StairMap
+		typename Allocator = std::allocator<UNode<Value>>>
+	class UStairMap
 	{
 	public:
-		using Bucket = Chain<Key,Value>;
-		using Node = Node<Key,Value>;
+		using Bucket = UChain<Value>;
+		using Node = UNode<Value>;
 		using NodePointer = Node*;
 
 		using BucketArray = std::vector<Bucket>;
 		using NodeArray = StairVector<Node, Allocator>;
-
-		using Iterator = MapIterator<Key,Value>;
-		using ConstIterator = MapIterator<Key,const Value>;
+		
+		using Iterator = UMapIterator<Value>;
+		using ConstIterator = UMapIterator<const Value>;
 
 		inline static constexpr double MAX_LOAD{ 0.9 };
 		inline static constexpr double MIN_LOAD{ 0.1 };
-
+	
 	private:
 		Hash hasher;
 		NodeArray nodeArray;
 		BucketArray bucketArray;
 
 	public:
-		StairMap(size_t tableSize = 2)
+		UStairMap(size_t tableSize = 2)
 			:bucketArray{ tableSize }
 		{
 		}
 
-		StairMap(const StairMap& left)
-			:nodeArray{ left.nodeArray }
+		UStairMap(const StairMap& left)
+			:nodeArray{left.nodeArray}
 		{
 			rehash(left.tableSize());
 		}
 
-		StairMap(StairMap&& right) noexcept = default;
+		UStairMap(StairMap&& right) noexcept = default;
 
-		StairMap& operator=(const StairMap& left)
+		UStairMap& operator=(const StairMap& left)
 		{
 			nodeArray = left.nodeArray;
 			rehash(left.tableSize());
 			return *this;
 		}
 
-		StairMap& operator=(StairMap&& right) noexcept = default;
+		UStairMap& operator=(StairMap&& right) noexcept = default;
 
-		~StairMap() = default;
-
+		~UStairMap() = default;
+		
 		void insert(const Key& key, const Value& value)
 		{
-			insert(Key{ key }, Value{ value });
+			insert(key,Value{value});
 		}
 
 		void insert(const Key& key, Value&& value)
 		{
-			insert(Key{ key }, std::move(value));
-		}
-
-		void insert(Key&& key, const Value& value)
-		{
-			insert(std::move(key), Value{value});
-		}
-
-		void insert(Key&& key, Value&& value)
-		{
 			size_t hashValue{ hasher(key) };
-			nodeArray.pushBack(Node{ std::move(key),std::move(value), hashValue });
+			nodeArray.pushBack(Node{ hashValue,std::move(value) });
 			bucketArray[hashValue % bucketArray.size()].pushFront(&nodeArray.back());
 			checkLoad();
 		}
@@ -214,13 +204,13 @@ namespace ByteC
 		Value& at(const Key& key)
 		{
 			size_t hashValue{ hasher(key) };
-			return bucketArray[hashValue % tableSize()].find(key,hashValue)->pair.second;
+			return bucketArray[hashValue % tableSize()].find(hashValue)->pair.second;
 		}
 
 		void erase(const Key& key)
 		{
-			size_t hashValue{ hasher(key) };
-			NodePointer left{ bucketArray[hashValue % tableSize()].remove(key, hashValue) };
+			size_t hashValue{hasher(key)};
+			NodePointer left{ bucketArray[hashValue % tableSize()].remove(hashValue)};
 			NodePointer right{ &nodeArray.back() };
 			std::swap(left, right);
 			nodeArray.popBack();
@@ -229,13 +219,13 @@ namespace ByteC
 		NodePointer find(const Key& key)
 		{
 			size_t hashValue{ hasher(key) };
-			return bucketArray[hashValue % tableSize()].find(key,hashValue);
+			return bucketArray[hashValue % tableSize()].find(hashValue);
 		}
 
 		bool contains(const Key& key) const
 		{
-			size_t hashValue{hasher(key)};
-			return static_cast<bool>(bucketArray[hashValue % tableSize()].find(key,hashValue));
+			size_t hashValue{ hasher(key) };
+			return static_cast<bool>(bucketArray[hashValue % tableSize()].find(hashValue));
 		}
 
 		Iterator begin()
@@ -273,7 +263,7 @@ namespace ByteC
 			BucketArray newBuckets{ newSize };
 			for (Node& node : nodeArray)
 			{
-				size_t newPosition{ node.hash % newSize };
+				size_t newPosition{ node.pair.first % newSize };
 				newBuckets[newPosition].pushFront(&node);
 			}
 			bucketArray = std::move(newBuckets);
