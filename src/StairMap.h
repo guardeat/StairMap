@@ -155,7 +155,7 @@ namespace ByteC
 		using Iterator = MapIterator<Key,Value>;
 		using ConstIterator = MapIterator<Key,const Value>;
 
-		inline static constexpr double MAX_LOAD{ 0.9 };
+		inline static constexpr double MAX_LOAD{ 0.3 };
 		inline static constexpr double MIN_LOAD{ 0.1 };
 
 	private:

@@ -113,12 +113,12 @@ namespace ByteC
 			return &arrays[arrayIndex][index + 2 - (2ULL << arrayIndex)].pair;
 		}
 
-		bool operator==(const MapIterator& left) const
+		bool operator==(const UMapIterator& left) const
 		{
 			return index == left.index;
 		}
 
-		bool operator!=(const MapIterator& left) const
+		bool operator!=(const UMapIterator& left) const
 		{
 			return index != left.index;
 		}
@@ -169,22 +169,22 @@ namespace ByteC
 		{
 		}
 
-		UStairMap(const StairMap& left)
+		UStairMap(const UStairMap& left)
 			:nodeArray{left.nodeArray}
 		{
 			rehash(left.tableSize());
 		}
 
-		UStairMap(StairMap&& right) noexcept = default;
+		UStairMap(UStairMap&& right) noexcept = default;
 
-		UStairMap& operator=(const StairMap& left)
+		UStairMap& operator=(const UStairMap& left)
 		{
 			nodeArray = left.nodeArray;
 			rehash(left.tableSize());
 			return *this;
 		}
 
-		UStairMap& operator=(StairMap&& right) noexcept = default;
+		UStairMap& operator=(UStairMap&& right) noexcept = default;
 
 		~UStairMap() = default;
 		
