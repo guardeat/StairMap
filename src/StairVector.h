@@ -238,7 +238,10 @@ namespace ByteC
 			StairVector out;
 			out.increaseCapacity(capacity());
 			size_t count{ arrays.size() };
-			std::copy(begin(), end(), out.begin());
+			for (const Value& value: *this)
+			{
+				out.pushBack(value);
+			}
 			out.itemCount = itemCount;
 			return out;
 		}
