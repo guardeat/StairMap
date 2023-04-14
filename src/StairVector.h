@@ -7,29 +7,19 @@
 #include <algorithm>
 #include <memory>
 
+#include "TypeTraits.h"
+
 namespace ByteC
 {
-
-	template<typename Type>
-	struct isConst
-	{
-		inline static constexpr bool value{ false };
-	};
-
-	template<typename Type>
-	struct isConst<const Type>
-	{
-		inline static constexpr bool value{ true };
-	};
 
 	template<typename Type>
 	class StairIterator
 	{
 	public:
-		using Value = std::conditional_t<isConst<Type>::value, const Type, Type >;
-		using Pointer = std::conditional_t<isConst<Type>::value, const Type*, Type* >;
-		using Array = std::conditional_t< isConst<Type>::value, const Type*, Type* >;
-		using StairArray = std::conditional_t< isConst<Type>::value, const Array*, Array*>;
+		using Value = Type;
+		using Pointer = Type*;
+		using Array = Type*;
+		using StairArray = std::conditional_t< ByteT::isConst<Type>::value, const Array*, Array*>;
 
 	private:
 		StairArray arrays;

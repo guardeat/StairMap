@@ -3,9 +3,11 @@
 
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include "StairVector.h"
 #include "Hash.h"
+#include "TypeTraits.h"
 
 namespace ByteC
 {
@@ -16,8 +18,9 @@ namespace ByteC
 		using Pair = std::pair<const Key, Value>;
 
 		Pair pair;
+
 		NextPointer next{ nullptr };
-		size_t hash;
+		const size_t hash;
 
 		Node(Key&& key, Value&& value, size_t hash)
 			:pair{ std::move(key),std::move(value) }, hash{hash}
@@ -105,10 +108,10 @@ namespace ByteC
 	{
 	public:
 		using Pair = std::pair<const Key, Value>;
-		using Node = std::conditional_t<isConst<Value>::value, const Node<Key,Value>, Node<Key,Value> >;
-		using Pointer = std::conditional_t<isConst<Value>::value, const Node*, Node* >;
-		using Array = std::conditional_t< isConst<Value>::value, const Node*, Node* >;
-		using StairArray = std::conditional_t< isConst<Value>::value, const Array*, Array*>;
+		using Node = std::conditional_t< ByteT::isConst<Value>::value, const Node<Key,Value>, Node<Key,Value> >;
+		using Pointer = Node*;
+		using Array = Node*;
+		using StairArray = std::conditional_t< ByteT::isConst<Value>::value, const Array*, Array*>;
 
 	private:
 		StairArray arrays;
@@ -156,6 +159,41 @@ namespace ByteC
 		}
 	};
 
+	template<typename Key, typename Value>
+	class SearchResult
+	{
+	public:
+		using Node = std::conditional_t<ByteT::isConst<Value>::value, const Node<Key, Value>, Node<Key, Value>>;
+		using NodePointer = Node*;
+
+		using Pair = std::pair<const Key, Value>;
+		using PairPointer = Pair*;
+
+	private:
+		NodePointer result;
+
+	public:
+		SearchResult(NodePointer result)
+			:result{ result }
+		{
+		}
+
+		Value& operator*()
+		{
+			return result->pair.second;
+		}
+
+		PairPointer operator->()
+		{
+			return &result->pair;
+		}
+
+		bool isValid()
+		{
+			return result != nullptr;
+		}
+	};
+
 	template<
 		typename Key,
 		typename Value,
@@ -173,6 +211,9 @@ namespace ByteC
 
 		using Iterator = MapIterator<Key,Value>;
 		using ConstIterator = MapIterator<Key,const Value>;
+
+		using Result = SearchResult<Key, Value>;
+		using ConstResult = SearchResult<Key, const Value>;
 
 		inline static constexpr double MAX_LOAD{ 0.9 };
 		inline static constexpr double MIN_LOAD{ 0.1 };
@@ -274,13 +315,13 @@ namespace ByteC
 			nodeArray.popBack();
 		}
 
-		NodePointer find(const Key& key)
+		Result find(const Key& key)
 		{
 			size_t hashValue{ hasher(key) };
 			return bucketArray[hashValue % tableSize()].find(key,hashValue);
 		}
 
-		const NodePointer find(const Key& key) const
+		const ConstResult find(const Key& key) const
 		{
 			size_t hashValue{ hasher(key) };
 			return bucketArray.at(hashValue % tableSize()).find(key, hashValue);
