@@ -11,10 +11,13 @@
 
 namespace ByteC
 {
-	template<typename Key,typename Value>
-	struct Node
+	template<typename Key,typename Type>
+	struct MapNode
 	{
-		using NextPointer = Node*;
+		using Value = Type;
+
+		using NextPointer = MapNode*;
+
 		using Pair = std::pair<const Key, Value>;
 
 		Pair pair;
@@ -22,17 +25,17 @@ namespace ByteC
 		NextPointer next{ nullptr };
 		const size_t hash;
 
-		Node(Key&& key, Value&& value, size_t hash)
+		MapNode(Key&& key, Value&& value, size_t hash)
 			:pair{ std::move(key),std::move(value) }, hash{hash}
 		{
 		}
 	};
 
-	template<typename Key, typename Value>
+	template<typename Key, typename Type>
 	class Chain
 	{
 	public:
-		using NodePointer = Node<Key,Value>*;
+		using NodePointer = MapNode<Key,Type>*;
 
 	private:
 		NodePointer head{};
@@ -103,13 +106,17 @@ namespace ByteC
 		}
 	};
 
-	template<typename Key, typename Value>
+	template<typename Key, typename Type>
 	class MapIterator
 	{
 	public:
+		using Value = Type;
+
 		using Pair = std::pair<const Key, Value>;
-		using Node = std::conditional_t< ByteT::isConst<Value>::value, const Node<Key,Value>, Node<Key,Value> >;
-		using Pointer = Node*;
+
+		using Node = std::conditional_t< ByteT::isConst<Value>::value, const MapNode<Key,Value>, MapNode<Key,Value> >;
+		using NodePointer = Node*;
+
 		using Array = Node*;
 		using StairArray = std::conditional_t< ByteT::isConst<Value>::value, const Array*, Array*>;
 
@@ -129,7 +136,7 @@ namespace ByteC
 			return arrays[arrayIndex][index + 2 - (2ULL << arrayIndex)].pair;
 		}
 
-		Pointer operator->()
+		NodePointer operator->()
 		{
 			size_t arrayIndex{ std::bit_width(index + 2) - 2 };
 			return &arrays[arrayIndex][index + 2 - (2ULL << arrayIndex)].pair;
@@ -159,11 +166,13 @@ namespace ByteC
 		}
 	};
 
-	template<typename Key, typename Value>
+	template<typename Key, typename Type>
 	class SearchResult
 	{
 	public:
-		using Node = std::conditional_t<ByteT::isConst<Value>::value, const Node<Key, Value>, Node<Key, Value>>;
+		using Value = Type;
+
+		using Node = std::conditional_t<ByteT::isConst<Value>::value, const MapNode<Key, Value>, MapNode<Key, Value>>;
 		using NodePointer = Node*;
 
 		using Pair = std::pair<const Key, Value>;
@@ -196,14 +205,16 @@ namespace ByteC
 
 	template<
 		typename Key,
-		typename Value,
+		typename Type,
 		typename Hash = ByteA::Hash<Key>,
-		typename Allocator = std::allocator<Node<Key,Value>>>
+		typename Allocator = std::allocator<MapNode<Key,Type>>>
 	class StairMap
 	{
 	public:
+		using Value = Type;
+
 		using Bucket = Chain<Key,Value>;
-		using Node = Node<Key,Value>;
+		using Node = MapNode<Key,Value>;
 		using NodePointer = Node*;
 
 		using BucketArray = std::vector<Bucket>;
