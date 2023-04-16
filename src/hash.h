@@ -95,7 +95,7 @@ namespace ByteA
     template<>
     struct Hash<std::string>
     {
-        constexpr uint64_t operator()(const std::string& arg)
+        constexpr uint64_t operator()(const std::string& arg) const
         {
             constexpr size_t prime{ 1099511628211ULL };
 
