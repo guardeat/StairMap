@@ -93,7 +93,7 @@ namespace ByteA
     };
 
     template<>
-    struct Hash<std::string>: public std::hash<std::string>
+    struct Hash<std::string>
     {
         constexpr uint64_t operator()(const std::string& arg)
         {
