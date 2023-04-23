@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <memory>
 
-#include "TypeTraits.h"
+#include "type_traits.h"
 
 namespace ByteC
 {
@@ -74,6 +74,8 @@ namespace ByteC
 		using Value = Type;
 		using Array = Type*;
 		using ArrayContainer = std::vector<Array>;
+
+		using AllocatorTraits = std::allocator_traits<Allocator>;
 
 		using Iterator = StairIterator<Type>;
 		using ConstIterator = StairIterator<const Type>;
@@ -248,19 +250,19 @@ namespace ByteC
 
 		void construct(size_t index, Value&& value)
 		{
-			std::allocator_traits<Allocator>::construct(allocator, &at(index), std::move(value));
+			AllocatorTraits::construct(allocator, &at(index), std::move(value));
 		}
 
 		void destroy(size_t index)
 		{
-			std::allocator_traits<Allocator>::destroy(allocator, &at(index));
+			AllocatorTraits::destroy(allocator, &at(index));
 		}
 
 		void increaseCapacity(size_t newCapacity)
 		{
 			while (capacity() < newCapacity)
 			{
-				arrays.push_back(std::allocator_traits<Allocator>::allocate(allocator, 2LL << arrays.size()));
+				arrays.push_back(AllocatorTraits::allocate(allocator, 2LL << arrays.size()));
 			}
 		}
 
@@ -273,7 +275,7 @@ namespace ByteC
 
 			while (capacity() > newCapacity)
 			{
-				std::allocator_traits<Allocator>::deallocate(allocator, arrays.back(), (1ULL << arrays.size()));
+				AllocatorTraits::deallocate(allocator, arrays.back(), (1ULL << arrays.size()));
 				arrays.pop_back();
 			}
 		}
