@@ -153,7 +153,8 @@ namespace ByteC
 
 		const Value& at(size_t index) const
 		{
-			return at(index);
+			size_t arrayIndex{ std::bit_width(index + 2) - 2 };
+			return arrays.at(arrayIndex)[index + 2 - (2ULL << arrayIndex)];
 		}
 
 		Value& operator[](size_t index)
