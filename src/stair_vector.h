@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <memory>
 
-#include "type_traits.h"
+#include "type_info.h"
 
 namespace ByteC
 {
