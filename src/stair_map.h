@@ -5,9 +5,9 @@
 #include <utility>
 #include <vector>
 
-#include "StairVector.h"
-#include "Hash.h"
-#include "TypeTraits.h"
+#include "stair_vector.h"
+#include "hash.h"
+#include "type_info.h"
 
 namespace ByteC
 {
