@@ -109,15 +109,14 @@ namespace ByteC
 	public:
 		using Value = Type;
 
-		using Pair = std::conditional_t< 
-			ByteT::isConst<Value>::value, 
-			const std::pair<const Key, Value>, 
-			std::pair<const Key, Value> >;
+		using Pair = std::pair<const Key, Type>;
+		using PairReference = Pair&;
+		using PairPointer = Pair*;
 
-		using Node = MapNode<Key,typename std::remove_const<Value>::type>;
+		using Node = MapNode<Key,Value>;
 		using NodePointer = Node*;
 
-		using StairVector = std::conditional_t< ByteT::isConst<Value>::value, const StairVector<Node>, StairVector<Node>>;
+		using StairVector = ByteC::StairVector<Node>;
 		using StairVectorPointer = StairVector*;
 
 	private:
@@ -130,12 +129,12 @@ namespace ByteC
 		{
 		}
 
-		Pair& operator*()
+		PairReference operator*()
 		{
 			return arrays->at(index).pair;
 		}
 
-		NodePointer operator->()
+		PairPointer operator->()
 		{
 			return &arrays->at(index).pair;
 		}
@@ -159,6 +158,66 @@ namespace ByteC
 		MapIterator operator++(int)
 		{
 			MapIterator<Key,Value> old{ *this };
+			++index;
+			return old;
+		}
+	};
+
+	template<typename Key, typename Type>
+	class ConstMapIterator
+	{
+	public:
+		using Value = Type;
+
+		using Pair = std::pair<const Key, Type>;
+		using PairReference = const Pair&;
+		using PairPointer = const Pair*;
+
+		using Node = MapNode<Key, typename std::remove_const<Value>::type>;
+		using NodePointer = Node*;
+
+		using StairVector = const ByteC::StairVector<Node>;
+		using StairVectorPointer = StairVector*;
+
+	private:
+		StairVectorPointer arrays;
+		size_t index;
+
+	public:
+		ConstMapIterator(StairVector& arrays, size_t start)
+			:arrays{ &arrays }, index{ start }
+		{
+		}
+
+		PairReference operator*()
+		{
+			return arrays->at(index).pair;
+		}
+
+		PairPointer operator->()
+		{
+			return &arrays->at(index).pair;
+		}
+
+		bool operator==(const ConstMapIterator& left) const
+		{
+			return index == left.index;
+		}
+
+		bool operator!=(const ConstMapIterator& left) const
+		{
+			return index != left.index;
+		}
+
+		ConstMapIterator& operator++()
+		{
+			++index;
+			return *this;
+		}
+
+		ConstMapIterator operator++(int)
+		{
+			MapIterator<Key, Value> old{ *this };
 			++index;
 			return old;
 		}
@@ -190,7 +249,17 @@ namespace ByteC
 			return result->pair.second;
 		}
 
+		const Value& operator*() const
+		{
+			return result->pair.second;
+		}
+
 		PairPointer operator->()
+		{
+			return &result->pair;
+		}
+
+		const PairPointer operator->() const
 		{
 			return &result->pair;
 		}
@@ -219,10 +288,10 @@ namespace ByteC
 		using NodeArray = StairVector<Node, Allocator>;
 
 		using Iterator = MapIterator<Key,Value>;
-		using ConstIterator = MapIterator<Key,const Value>;
+		using ConstIterator = ConstMapIterator<Key,Value>;
 
 		using Result = SearchResult<Key, Value>;
-		using ConstResult = SearchResult<Key, const Value>;
+		using ConstResult = const SearchResult<Key, const Value>;
 
 		inline static constexpr double MAX_LOAD{ 0.9 };
 		inline static constexpr double MIN_LOAD{ 0.1 };
@@ -344,12 +413,12 @@ namespace ByteC
 
 		Iterator begin()
 		{
-			return Iterator{ nodeArray,0 };
+			return Iterator{ nodeArray,0};
 		}
 
 		Iterator end()
 		{
-			return Iterator{ nodeArray,nodeArray.size() };
+			return Iterator{ nodeArray,nodeArray.size()};
 		}
 
 		ConstIterator begin() const
