@@ -51,30 +51,12 @@ namespace ByteC
 
 		NodePointer find(const Key& key, size_t hashKey)
 		{
-			NodePointer iterator{ head };
-			while (iterator)
-			{
-				if (iterator->hash == hashKey && iterator->pair.first == key)
-				{
-					return iterator;
-				}
-				iterator = iterator->next;
-			}
-			return nullptr;
+			return findBase(key, hashKey);
 		}
 
 		const NodePointer find(const Key& key, size_t hashKey) const
 		{
-			NodePointer iterator{ head };
-			while (iterator)
-			{
-				if (iterator->hash == hashKey && iterator->pair.first == key)
-				{
-					return iterator;
-				}
-				iterator = iterator->next;
-			}
-			return nullptr;
+			return findBase(key, hashKey);
 		}
 
 		const bool contains(const Key& key, size_t hashKey) const
@@ -99,6 +81,21 @@ namespace ByteC
 					NodePointer out{ iterator->next };
 					iterator->next = out->next;
 					return out;
+				}
+				iterator = iterator->next;
+			}
+			return nullptr;
+		}
+
+	private:
+		NodePointer findBase(const Key& key, size_t hashKey) const
+		{
+			NodePointer iterator{ head };
+			while (iterator)
+			{
+				if (iterator->hash == hashKey && iterator->pair.first == key)
+				{
+					return iterator;
 				}
 				iterator = iterator->next;
 			}
