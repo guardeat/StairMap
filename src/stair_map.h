@@ -7,7 +7,7 @@
 
 #include "stair_vector.h"
 #include "hash.h"
-#include "type_info.h"
+#include "type_traits.h"
 
 namespace ByteC
 {
@@ -84,7 +84,7 @@ namespace ByteC
 
 		NodePointer remove(const Key& key, size_t hashKey)
 		{
-			if (head->hash == hashKey && head->pair->first == key)
+			if (head->hash == hashKey && head->pair.first == key)
 			{
 				NodePointer out{ head };
 				head = head->next;
@@ -94,7 +94,7 @@ namespace ByteC
 			NodePointer iterator{ head };
 			while (iterator->next)
 			{
-				if (iterator->hash == hashKey && iterator->pair->first == key)
+				if (iterator->hash == hashKey && iterator->pair.first == key)
 				{
 					NodePointer out{ iterator->next };
 					iterator->next = out->next;
@@ -112,34 +112,35 @@ namespace ByteC
 	public:
 		using Value = Type;
 
-		using Pair = std::pair<const Key, Value>;
+		using Pair = std::conditional_t< 
+			ByteT::isConst<Value>::value, 
+			const std::pair<const Key, Value>, 
+			std::pair<const Key, Value> >;
 
-		using Node = std::conditional_t< ByteT::isConst<Value>::value, const MapNode<Key,Value>, MapNode<Key,Value> >;
+		using Node = MapNode<Key,typename std::remove_const<Value>::type>;
 		using NodePointer = Node*;
 
-		using Array = Node*;
-		using StairArray = std::conditional_t< ByteT::isConst<Value>::value, const Array*, Array*>;
+		using StairVector = std::conditional_t< ByteT::isConst<Value>::value, const StairVector<Node>, StairVector<Node>>;
+		using StairVectorPointer = StairVector*;
 
 	private:
-		StairArray arrays;
+		StairVectorPointer arrays;
 		size_t index;
 
 	public:
-		MapIterator(StairArray arrays, size_t start)
-			:arrays{ arrays }, index{ start }
+		MapIterator(StairVector& arrays, size_t start)
+			:arrays{ &arrays }, index{ start }
 		{
 		}
 
 		Pair& operator*()
 		{
-			size_t arrayIndex{ std::bit_width(index + 2) - 2 };
-			return arrays[arrayIndex][index + 2 - (2ULL << arrayIndex)].pair;
+			return arrays->at(index).pair;
 		}
 
 		NodePointer operator->()
 		{
-			size_t arrayIndex{ std::bit_width(index + 2) - 2 };
-			return &arrays[arrayIndex][index + 2 - (2ULL << arrayIndex)].pair;
+			return &arrays->at(index).pair;
 		}
 
 		bool operator==(const MapIterator& left) const
@@ -172,7 +173,7 @@ namespace ByteC
 	public:
 		using Value = Type;
 
-		using Node = std::conditional_t<ByteT::isConst<Value>::value, const MapNode<Key, Value>, MapNode<Key, Value>>;
+		using Node = MapNode<Key, typename std::remove_const<Value>::type>;
 		using NodePointer = Node*;
 
 		using Pair = std::pair<const Key, Value>;
@@ -197,7 +198,7 @@ namespace ByteC
 			return &result->pair;
 		}
 
-		bool isValid()
+		bool valid()
 		{
 			return result != nullptr;
 		}
@@ -346,27 +347,32 @@ namespace ByteC
 
 		Iterator begin()
 		{
-			return Iterator{ nodeArray.data().data(),0 };
+			return Iterator{ nodeArray,0 };
 		}
 
 		Iterator end()
 		{
-			return Iterator{ nodeArray.data().data(),nodeArray.size() };
+			return Iterator{ nodeArray,nodeArray.size() };
 		}
 
 		ConstIterator begin() const
 		{
-			return ConstIterator{ nodeArray.data().data(),0 };
+			return ConstIterator{ nodeArray,0 };
 		}
 
 		ConstIterator end() const
 		{
-			return ConstIterator{ nodeArray.data().data(),nodeArray.size() };
+			return ConstIterator{ nodeArray,nodeArray.size() };
 		}
 
 		size_t size() const
 		{
 			return nodeArray.size();
+		}
+
+		bool empty() const
+		{
+			return nodeArray.empty();
 		}
 
 		size_t tableSize() const
