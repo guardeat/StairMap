@@ -1,16 +1,115 @@
 #ifndef STAIRVECTOR_H
 #define STAIRVECTOR_H
 
-#include <vector>
 #include <bit>
 #include <type_traits>
 #include <algorithm>
 #include <memory>
 
-#include "type_info.h"
+#include "type_traits.h"
 
 namespace ByteC
 {
+	template<typename Type>
+	class ArrayContainer
+	{
+	public:
+		using Pointer = Type*;
+		using Array = Type*;
+		using Container = Array*;
+
+	private:
+		Container arrays{nullptr};
+		uint8_t arrayCount{ 0 };
+
+	public:
+		ArrayContainer() = default;
+
+		~ArrayContainer()
+		{
+			clear();
+		}
+
+		ArrayContainer(const ArrayContainer& left) = delete;
+
+		ArrayContainer(ArrayContainer&& right) noexcept
+		{
+			arrays = right.arrays;
+			right.arrays = nullptr;
+			right.arrayCount = 0;
+		}
+
+		void pushBack(Array newArray)
+		{
+			Container newArrays{ new Array[arrayCount + 1] };
+			if (arrayCount > 0)
+			{
+				std::copy(arrays,arrays + arrayCount,newArrays);
+				delete[] arrays;
+			}
+			newArrays[arrayCount] = newArray;
+			++arrayCount;
+			arrays = newArrays;
+		}
+
+		void popBack()
+		{
+			--arrayCount;
+			if (arrayCount > 0)
+			{
+				Container newArrays{ new Array[arrayCount] };
+				std::copy(arrays, arrays + arrayCount, newArrays);
+				delete[] arrays;
+				arrays = newArrays;
+			}
+			else
+			{
+				arrays = nullptr;
+			}
+		}
+
+		Array at(size_t index)
+		{
+			return arrays[index];
+		}
+
+		const Array at(size_t index) const
+		{
+			return arrays[index];
+		}
+
+		Array back()
+		{
+			return arrays[arrayCount - 1];
+		}
+
+		const Array back() const
+		{
+			return arrays[arrayCount - 1];
+		}
+
+		void clear()
+		{
+			delete[] arrays;
+			arrays = nullptr;
+			arrayCount = 0;
+		}
+
+		size_t size() const
+		{
+			return arrayCount;
+		}
+
+		Container data()
+		{
+			return arrays;
+		}
+
+		const Container data() const
+		{
+			return arrays;
+		}
+	};
 
 	template<typename Type>
 	class StairIterator
@@ -73,7 +172,7 @@ namespace ByteC
 	public:
 		using Value = Type;
 		using Array = Type*;
-		using ArrayContainer = std::vector<Array>;
+		using ArrayContainer = ArrayContainer<Type>;
 
 		using AllocatorTraits = std::allocator_traits<Allocator>;
 
@@ -148,7 +247,7 @@ namespace ByteC
 		Value& at(size_t index)
 		{
 			size_t arrayIndex{ std::bit_width(index + 2) - 2 };
-			return arrays[arrayIndex][index + 2 - (2ULL << arrayIndex)];
+			return arrays.at(arrayIndex)[index + 2 - (2ULL << arrayIndex)];
 		}
 
 		const Value& at(size_t index) const
@@ -263,7 +362,7 @@ namespace ByteC
 		{
 			while (capacity() < newCapacity)
 			{
-				arrays.push_back(AllocatorTraits::allocate(allocator, 2LL << arrays.size()));
+				arrays.pushBack(AllocatorTraits::allocate(allocator, 2LL << arrays.size()));
 			}
 		}
 
@@ -277,7 +376,7 @@ namespace ByteC
 			while (capacity() > newCapacity)
 			{
 				AllocatorTraits::deallocate(allocator, arrays.back(), (1ULL << arrays.size()));
-				arrays.pop_back();
+				arrays.popBack();
 			}
 		}
 
