@@ -1,5 +1,5 @@
-#ifndef STAIRMAP_H
-#define	STAIRMAP_H
+#ifndef B_STAIRMAP_H
+#define	B_STAIRMAP_H
 
 #include <memory>
 #include <utility>
@@ -18,12 +18,12 @@ namespace ByteC
 
 		using NextPointer = MapNode*;
 
-		using Pair = std::pair<const Key, Value>;
+		using Pair = std::pair<Key, Value>;
 
 		Pair pair;
 
 		NextPointer next{ nullptr };
-		const size_t hash;
+		size_t hash;
 
 		MapNode(Key&& key, Value&& value, size_t hash)
 			:pair{ std::move(key),std::move(value) }, hash{hash}
@@ -109,7 +109,7 @@ namespace ByteC
 	public:
 		using Value = Type;
 
-		using Pair = std::pair<const Key, typename std::remove_const<Value>::type>;
+		using Pair = std::pair<Key, typename std::remove_const<Value>::type>;
 		using PairReference = std::conditional_t<ByteT::isConst<Value>::value,const Pair&,Pair&>;
 
 		using Node = MapNode<Key, typename std::remove_const<Value>::type>;
@@ -165,12 +165,10 @@ namespace ByteC
 	{
 	public:
 		using Value = Type;
+		using ValuePointer = Value*;
 
 		using Node = MapNode<Key, typename std::remove_const<Value>::type>;
 		using NodePointer = Node*;
-
-		using Pair = std::pair<const Key, Value>;
-		using PairPointer = Pair*;
 
 	private:
 		NodePointer result;
@@ -191,19 +189,29 @@ namespace ByteC
 			return result->pair.second;
 		}
 
-		PairPointer operator->()
+		ValuePointer operator->()
 		{
-			return &result->pair;
+			return &result->pair.second;
 		}
 
-		const PairPointer operator->() const
+		const ValuePointer operator->() const
 		{
-			return &result->pair;
+			return &result->pair.second;
 		}
 
-		bool valid()
+		bool valid() const
 		{
 			return result != nullptr;
+		}
+
+		Value& get()
+		{
+			return result->pair.second;
+		}
+
+		const Value& get() const
+		{
+			return result->pair.second;
 		}
 	};
 
@@ -326,7 +334,7 @@ namespace ByteC
 			size_t hashValue{ hasher(key) };
 			NodePointer left{ bucketArray[hashValue % tableSize()].remove(key, hashValue) };
 			NodePointer right{ &nodeArray.back() };
-			std::swap(left, right);
+			std::swap(*left, *right);
 			nodeArray.popBack();
 		}
 

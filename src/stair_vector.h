@@ -1,5 +1,5 @@
-#ifndef STAIRVECTOR_H
-#define STAIRVECTOR_H
+#ifndef B_STAIRVECTOR_H
+#define B_STAIRVECTOR_H
 
 #include <bit>
 #include <type_traits>
@@ -16,11 +16,12 @@ namespace ByteC
 	public:
 		using Pointer = Type*;
 		using Array = Type*;
-		using Container = Array*;
+		using ContainerData = Array*;
+		using Container = std::unique_ptr<Array[]>;
 
 	private:
 		Container arrays{nullptr};
-		uint8_t arrayCount{ 0 };
+		size_t arrayCount{ 0 };
 
 	public:
 		ArrayContainer() = default;
@@ -34,22 +35,31 @@ namespace ByteC
 
 		ArrayContainer(ArrayContainer&& right) noexcept
 		{
-			arrays = right.arrays;
-			right.arrays = nullptr;
+			arrays = std::move(right.arrays);
 			right.arrayCount = 0;
+		}
+
+		ArrayContainer& operator=(const ArrayContainer& left) = delete;
+
+		ArrayContainer& operator=(ArrayContainer&& right) noexcept
+		{
+			clear();
+			arrays = std::move(right.arrays);
+			right.arrayCount = 0;
+
+			return *this;
 		}
 
 		void pushBack(Array newArray)
 		{
-			Container newArrays{ new Array[arrayCount + 1] };
+			Container newArrays{ std::make_unique<Array[]>(arrayCount + 1)};
 			if (arrayCount > 0)
 			{
-				std::copy(arrays,arrays + arrayCount,newArrays);
-				delete[] arrays;
+				std::copy(arrays.get(), arrays.get() + arrayCount, newArrays.get());
 			}
 			newArrays[arrayCount] = newArray;
 			++arrayCount;
-			arrays = newArrays;
+			arrays.swap(newArrays);
 		}
 
 		void popBack()
@@ -57,14 +67,13 @@ namespace ByteC
 			--arrayCount;
 			if (arrayCount > 0)
 			{
-				Container newArrays{ new Array[arrayCount] };
-				std::copy(arrays, arrays + arrayCount, newArrays);
-				delete[] arrays;
-				arrays = newArrays;
+				Container newArrays{ std::make_unique<Array[]>(arrayCount)};
+				std::copy(arrays.get(), arrays.get() + arrayCount, newArrays.get());
+				arrays.swap(newArrays);
 			}
 			else
 			{
-				arrays = nullptr;
+				arrays.reset();
 			}
 		}
 
@@ -90,8 +99,6 @@ namespace ByteC
 
 		void clear()
 		{
-			delete[] arrays;
-			arrays = nullptr;
 			arrayCount = 0;
 		}
 
@@ -100,14 +107,14 @@ namespace ByteC
 			return arrayCount;
 		}
 
-		Container data()
+		ContainerData data()
 		{
-			return arrays;
+			return arrays.get();
 		}
 
-		const Container data() const
+		const ContainerData data() const
 		{
-			return arrays;
+			return arrays.get();
 		}
 	};
 
