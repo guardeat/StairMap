@@ -167,7 +167,7 @@ namespace ByteC
 		using Value = Type;
 		using ValuePointer = Value*;
 
-		using Node = MapNode<Key, typename std::remove_const<Value>::type>;
+		using Node = MapNode<Key, Type>;
 		using NodePointer = Node*;
 
 	private:
@@ -236,7 +236,7 @@ namespace ByteC
 		using ConstIterator = MapIterator<Key,const Value>;
 
 		using Result = SearchResult<Key, Value>;
-		using ConstResult = const SearchResult<Key, const Value>;
+		using ConstResult = const SearchResult<Key, Value>;
 
 		inline static constexpr double MAX_LOAD{ 0.9 };
 		inline static constexpr double MIN_LOAD{ 0.1 };
@@ -334,7 +334,13 @@ namespace ByteC
 			size_t hashValue{ hasher(key) };
 			NodePointer left{ bucketArray[hashValue % tableSize()].remove(key, hashValue) };
 			NodePointer right{ &nodeArray.back() };
-			std::swap(*left, *right);
+
+			if (left->pair.first != right->pair.first)
+			{
+				bucketArray[right->hash % tableSize()].remove(right->pair.first,right->hash);
+				bucketArray[right->hash % tableSize()].pushFront(left);
+				std::swap(*left, *right);
+			}
 			nodeArray.popBack();
 		}
 
