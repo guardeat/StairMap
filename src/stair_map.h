@@ -64,7 +64,7 @@ namespace ByteC
 			return find(key, hashKey) != nullptr;
 		}
 
-		NodePointer remove(const Key& key, size_t hashKey)
+		[[maybe_unused]] NodePointer remove(const Key& key, size_t hashKey)
 		{
 			if (head->hash == hashKey && head->pair.first == key)
 			{
@@ -76,7 +76,7 @@ namespace ByteC
 			NodePointer iterator{ head };
 			while (iterator->next)
 			{
-				if (iterator->hash == hashKey && iterator->pair.first == key)
+				if (iterator->next->hash == hashKey && iterator->next->pair.first == key)
 				{
 					NodePointer out{ iterator->next };
 					iterator->next = out->next;
@@ -85,6 +85,28 @@ namespace ByteC
 				iterator = iterator->next;
 			}
 			return nullptr;
+		}
+
+		void setNode(const Key& key, size_t hashKey, NodePointer value)
+		{
+			if (head->hash == hashKey && head->pair.first == key)
+			{
+				value->next = head;
+				head = value;
+				return;
+			}
+
+			NodePointer iterator{ head };
+			while (iterator->next)
+			{
+				if (iterator->next->hash == hashKey && iterator->next->pair.first == key)
+				{
+					value->next = iterator->next;
+					iterator->next = value;
+					return;
+				}
+				iterator = iterator->next;
+			}
 		}
 
 	private:
@@ -337,8 +359,7 @@ namespace ByteC
 
 			if (left->pair.first != right->pair.first)
 			{
-				bucketArray[right->hash % tableSize()].remove(right->pair.first,right->hash);
-				bucketArray[right->hash % tableSize()].pushFront(left);
+				bucketArray[right->hash % tableSize()].setNode(right->pair.first,right->hash,left);
 				std::swap(*left, *right);
 			}
 			nodeArray.popBack();
